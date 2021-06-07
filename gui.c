@@ -13,7 +13,7 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "client.h"
+#include "server.h"
 
 #define SETTINGS_MENU_EXIT 1
 #define CONNECT 2
@@ -85,7 +85,7 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                     client = sock(text);
                     strcat(buf, text);
                     SetWindowText(hEdit, buf);
-                    if (strcmp(buf, "Verbindung fehlgeschlagen\r\n") != 0) {
+                    if (strcmp(buf, "Socket konnte nicht gebunden werden!\r\n") != 0 || client != 0) {
                         DestroyWindow(hButton);
                         AddSend(hwnd);
                     } else {
@@ -107,7 +107,7 @@ LRESULT CALLBACK WindowProcedure(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                         DestroyWindow(hButton2);
                         AddConnect(hwnd);
                         SetWindowText(hWrite, "");
-                        SetWindowText(hEdit, "Verbindung verloren");
+                        SetWindowText(hEdit, "Verbindung getrennt");
                     }
                 case RECEIVE:
                     beenden = echo(client, text, zeit);

@@ -10,39 +10,52 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include "client.h"
 
+#include "server.h"
+int close=0;
 
 SOCKET sock(char *text) {
-    SOCKET client;
-    struct sockaddr_in server_addr;
-    char buffer[BUFFER_SIZE] = {0};
-    int retcode;
+
+    SOCKET sock, fd;
+    unsigned int len;
+    char echo_buffer[BUFFER_SIZE] = {0};
     time_t zeit;
+    struct sockaddr_in server_addr, client;
+    int retcode;
 
     WORD wVersionRequested = MAKEWORD(1, 1);
     WSADATA wsaData;
     WSAStartup(wVersionRequested, &wsaData);
 
-    client = socket(AF_INET, SOCK_STREAM, 0);
-    if (client < 0) {
-        printf("Fehler beim Socket erstellen\n");
-        exit(-1);
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        sprintf(text,"Fehler beim Socket erstellen\n");
+        return 1;
     }
     bzero((char *) &server_addr, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(SERVER_PORT);
-    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    retcode = connect(client, (struct sockaddr *) &server_addr, sizeof(server_addr));
-    if (retcode < 0) {
-        sprintf(text,"Verbindung fehlgeschlagen\r\n");
-    } else {
-        sprintf(text, "Verbindung zu %s:%hu erfolgreich hergestellt.\r\n", inet_ntoa(server_addr.sin_addr),
-                ntohs(server_addr.sin_port));
-    }
-    return client;
-}
+    retcode = bind(sock, (struct sockaddr *) &server_addr, sizeof(server_addr));
 
+
+    if (retcode < 0) {
+        sprintf(text,"Socket konnte nicht gebunden werden!\n");
+        return 0;
+    } else {
+        sprintf(text,"Socket erfolgreich erstellt und gebunden!\r\n");
+        listen(sock, 2);
+        len = sizeof(client);
+        fd = accept(sock, (struct sockaddr *) &client, &len);
+        if(INVALID_SOCKET == fd){
+            sprintf(text,"Fehler bei accept");
+        }else{
+            sprintf(text,"Client verbunden: %s\r\n", inet_ntoa(client.sin_addr));
+        }
+        closesocket(sock);
+        return fd;
+    }
+}
 int echo(SOCKET client, char echo_buffer[BUFFER_SIZE], time_t zeit) {
     int recv_size = -1;
     int close = 0;
@@ -66,7 +79,6 @@ int echo(SOCKET client, char echo_buffer[BUFFER_SIZE], time_t zeit) {
         return close;
     }
 }
-
 int sen(char buffer[BUFFER_SIZE], SOCKET client, time_t zeit) {
     int echo_len = 0;
     int close = 0;
